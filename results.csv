@@ -1,0 +1,6 @@
+Model,Query,Answer,TimeTaken
+google/flan-t5-small,help me create a optimized scoring system for goverment to do a elgibility matrix to choose if the person is eligible for a grant,iii.,0.3489
+google/flan-t5-small,I love u,ii.,0.1354
+google/flan-t5-small,,ii.,0.4508
+google/flan-t5-small,,ii.,0.2635
+google/flan-t5-small,help me create a optimized scoring system for goverment to do a elgibility matrix to choose if the person is eligible for a grant,i.,0.3841
