@@ -6,6 +6,7 @@ import sys
 print("Imports completed")
 
 from data_processing import load_and_split_documents, load_and_split_rich_documents
+from multimodal_processing import process_multimodal_directory
 from embedding_utils import initialize_embeddings
 from vector_database import (
     create_faiss_vector_database,
@@ -18,31 +19,40 @@ from rag_pipeline import run_basic_rag, run_generative_rag
 
 print("All imports successful")
 
-def setup_rag_pipeline(data_dir: str, use_chroma: bool = False):
+def setup_rag_pipeline(data_dir: str, use_chroma: bool = False, multimodal: bool = False):
     """
     Set up the RAG pipeline components.
     
     Args:
         data_dir (str): Directory containing documents
         use_chroma (bool): Whether to use Chroma instead of FAISS
+        multimodal (bool): Whether to process multimodal documents
         
     Returns:
         tuple: (embeddings, retriever)
     """
     print(f"Starting setup with data directory: {data_dir}")
     
-    # Load and split documents
-    print("Loading and splitting documents...")
-    text_chunks = load_and_split_documents(data_dir)
-    print(f"Found {len(text_chunks)} text chunks")
+    if multimodal:
+        # Process multimodal documents
+        print("Processing multimodal documents...")
+        processed_docs = process_multimodal_directory(data_dir)
+        text_chunks = [doc["text"] for doc in processed_docs]
+        print(f"Found {len(text_chunks)} text chunks from multimodal documents")
+    else:
+        # Load and split documents
+        print("Loading and splitting documents...")
+        text_chunks = load_and_split_documents(data_dir)
+        print(f"Found {len(text_chunks)} text chunks")
+        
+        rich_chunks = load_and_split_rich_documents(data_dir)
+        print(f"Found {len(rich_chunks)} rich document chunks")
+        
+        text_chunks.extend(rich_chunks)
     
-    rich_chunks = load_and_split_rich_documents(data_dir)
-    print(f"Found {len(rich_chunks)} rich document chunks")
+    print(f"Total chunks: {len(text_chunks)}")
     
-    all_chunks = text_chunks + rich_chunks
-    print(f"Total chunks: {len(all_chunks)}")
-    
-    if not all_chunks:
+    if not text_chunks:
         print(f"No documents found in {data_dir}")
         return None, None
     
@@ -54,10 +64,10 @@ def setup_rag_pipeline(data_dir: str, use_chroma: bool = False):
     # Create vector store
     print("Creating vector store...")
     if use_chroma:
-        vectorstore = create_chroma_vector_database(all_chunks, embeddings)
+        vectorstore = create_chroma_vector_database(text_chunks, embeddings)
         retriever = get_chroma_retriever(vectorstore)
     else:
-        vectorstore = create_faiss_vector_database(all_chunks, embeddings)
+        vectorstore = create_faiss_vector_database(text_chunks, embeddings)
         retriever = get_faiss_retriever(vectorstore)
     print("Vector store created successfully")
     
@@ -72,6 +82,8 @@ def main():
                       help="Use Chroma instead of FAISS")
     parser.add_argument("--generative", action="store_true",
                       help="Use generative RAG pipeline")
+    parser.add_argument("--multimodal", action="store_true",
+                      help="Process multimodal documents")
     args = parser.parse_args()
     
     print("Starting RAG pipeline...")
@@ -92,7 +104,7 @@ def main():
         vectorstore = load_chroma_vector_database(embeddings)
         retriever = get_chroma_retriever(vectorstore)
     else:
-        embeddings, retriever = setup_rag_pipeline(str(data_dir), args.use_chroma)
+        embeddings, retriever = setup_rag_pipeline(str(data_dir), args.use_chroma, args.multimodal)
 
     if not retriever:
         print("Failed to setup pipeline. Exiting.")

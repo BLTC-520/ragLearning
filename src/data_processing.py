@@ -29,11 +29,14 @@ def load_and_split_documents(directory_path: str) -> List[str]:
     # Load documents
     documents = txt_loader.load()
     
-    # Create text splitter
+    # Create text splitter with enhanced chunking options
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=512,
-        chunk_overlap=50,
+        chunk_size=512,  # Hard maximum size
+        chunk_overlap=50,  # Overlap between chunks
         length_function=len,
+        separators=["\n\n", "\n", ".", "!", "?", ",", " ", ""],  # Preserve natural boundaries
+        keep_separator=True,  # Keep separators in chunks
+        is_separator_regex=False  # Use exact string matching
     )
     
     # Split documents
@@ -66,10 +69,12 @@ def load_and_split_rich_documents(directory_path: str) -> List[str]:
     # Load documents
     documents = pdf_loader.load() + docx_loader.load()
     
-    # Create token splitter
+    # Create token splitter with enhanced chunking options
     token_splitter = TokenTextSplitter(
-        chunk_size=500,
-        chunk_overlap=100
+        chunk_size=500,  # Hard maximum size
+        chunk_overlap=100,  # Overlap between chunks
+        encoding_name="cl100k_base",  # Tokenizer to use
+        add_start_index=True  # Add start index to chunks
     )
     
     # Split documents
